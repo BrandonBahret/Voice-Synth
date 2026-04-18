@@ -22,10 +22,11 @@ pyproject.toml
 ./voice_conductor/providers/kokoro.py
 ./voice_conductor/providers/registry.py
 ./voice_conductor/providers/windows.py
-examples/custom_provider_demo/ascii_song_demo.py
-examples/custom_provider_demo/custom_provider_demo.py
-examples/custom_provider_demo/midi_to_ascii.py
-examples/simple_ui_wrapper/simple_ui_wrapper.py
+VoiceConductor.egg-info/PKG-INFO
+VoiceConductor.egg-info/SOURCES.txt
+VoiceConductor.egg-info/dependency_links.txt
+VoiceConductor.egg-info/requires.txt
+VoiceConductor.egg-info/top_level.txt
 tests/test_api_cache.py
 tests/test_config_api.py
 tests/test_custom_provider_demo.py
@@ -51,11 +52,6 @@ voice_conductor/manager.py
 voice_conductor/phrase_cache.py
 voice_conductor/types.py
 voice_conductor/voice_keys.py
-voice_conductor.egg-info/PKG-INFO
-voice_conductor.egg-info/SOURCES.txt
-voice_conductor.egg-info/dependency_links.txt
-voice_conductor.egg-info/requires.txt
-voice_conductor.egg-info/top_level.txt
 voice_conductor/audio/__init__.py
 voice_conductor/audio/devices.py
 voice_conductor/audio/playback.py

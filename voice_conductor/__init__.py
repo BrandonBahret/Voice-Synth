@@ -41,6 +41,8 @@ from .types import (
 )
 from .voice_keys import normalize_voice_key
 
+__version__ = "0.1.2"
+
 __all__ = [
     "AudioDevice",
     "AudioRoute",
