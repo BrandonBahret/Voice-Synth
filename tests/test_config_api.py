@@ -236,6 +236,70 @@ class ConfigAPITests(unittest.TestCase):
         self.assertIn("voice_conductor", payload)
         self.assertIn("providers", payload)
 
+    def test_settings_from_file_keeps_relative_cache_paths_stable_across_save_loops(self) -> None:
+        original_cwd = Path.cwd()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            os.chdir(temp_path)
+            try:
+                path = Path("demo_files") / "demo-voice_conductor.config.jsonc"
+
+                settings = Settings.from_file(path)
+                settings.save_settings(path)
+                settings = Settings.from_file(path)
+                settings.save_settings(path)
+
+                saved_path = temp_path / path
+                payload = _loads_config_text(saved_path.read_text(encoding="utf-8"), saved_path)
+                cache = payload["voice_conductor"]["cache"]
+                reloaded = Settings.from_file(path)
+            finally:
+                os.chdir(original_cwd)
+
+        self.assertEqual(cache["root"], ".")
+        self.assertEqual(cache["path"], "voice_conductor_cache.db")
+        self.assertEqual(cache["api_dir"], "api-caches")
+        self.assertEqual(
+            Path(reloaded.voice_conductor.cache.path),
+            temp_path / "demo_files" / "voice_conductor_cache.db",
+        )
+        self.assertEqual(
+            Path(reloaded.voice_conductor.cache.api_dir),
+            temp_path / "demo_files" / "api-caches",
+        )
+
+    def test_settings_from_file_collapses_legacy_cwd_relative_cache_paths(self) -> None:
+        original_cwd = Path.cwd()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            os.chdir(temp_path)
+            try:
+                path = Path("demo_files") / "demo-voice_conductor.config.jsonc"
+                path.parent.mkdir()
+                path.write_text(
+                    (
+                        '{"voice_conductor":{"cache":{'
+                        '"root":"demo_files/demo_files",'
+                        '"path":"demo_files/demo_files/voice_conductor_cache.db",'
+                        '"api_dir":"demo_files/demo_files/api-caches"'
+                        "}}}"
+                    ),
+                    encoding="utf-8",
+                )
+
+                settings = Settings.from_file(path)
+                settings.save_settings(path)
+
+                saved_path = temp_path / path
+                payload = _loads_config_text(saved_path.read_text(encoding="utf-8"), saved_path)
+                cache = payload["voice_conductor"]["cache"]
+            finally:
+                os.chdir(original_cwd)
+
+        self.assertEqual(cache["root"], ".")
+        self.assertEqual(cache["path"], "voice_conductor_cache.db")
+        self.assertEqual(cache["api_dir"], "api-caches")
+
     def test_settings_from_dict_constructs_nested_config(self) -> None:
         settings = settings_from_dict(
             {

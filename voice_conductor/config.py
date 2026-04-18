@@ -89,6 +89,82 @@ def _normalize_windows_config_path(value: str | os.PathLike[str]) -> str:
     return value
 
 
+def _absolute_config_path(path: str | Path) -> Path:
+    target = Path(path).expanduser()
+    if target.is_absolute():
+        return target
+    return (Path.cwd() / target).resolve(strict=False)
+
+
+def _path_is_relative_to(path: Path, base_dir: Path) -> bool:
+    try:
+        path.relative_to(base_dir)
+    except ValueError:
+        return False
+    return True
+
+
+def _config_relative_path(
+    value: str | os.PathLike[str] | None,
+    base_dir: Path,
+) -> str | None:
+    if value is None:
+        return None
+
+    raw_path = Path(value).expanduser()
+    should_relativize = not raw_path.is_absolute()
+    if raw_path.is_absolute():
+        absolute_path = raw_path.resolve(strict=False)
+        should_relativize = _path_is_relative_to(absolute_path, base_dir)
+    else:
+        absolute_path = (Path.cwd() / raw_path).resolve(strict=False)
+
+    if not should_relativize:
+        return _normalize_windows_config_path(absolute_path)
+
+    try:
+        relative_path = os.path.relpath(absolute_path, base_dir)
+    except ValueError:
+        return _normalize_windows_config_path(absolute_path)
+    return _normalize_windows_config_path(relative_path)
+
+
+def _resolve_config_cache_path(value: str | os.PathLike[str], base_dir: Path) -> str:
+    raw_path = Path(value).expanduser()
+    if raw_path.is_absolute():
+        return _normalize_windows_config_path(raw_path.resolve(strict=False))
+
+    legacy_path = _legacy_cwd_relative_cache_path(raw_path, base_dir)
+    if legacy_path is not None:
+        return _normalize_windows_config_path(legacy_path)
+
+    return _normalize_windows_config_path(base_dir / raw_path)
+
+
+def _legacy_cwd_relative_cache_path(raw_path: Path, base_dir: Path) -> Path | None:
+    """Collapse cache paths written relative to cwd by older nested config saves."""
+
+    cwd = Path.cwd().resolve(strict=False)
+    base_dir = base_dir.resolve(strict=False)
+    try:
+        base_parts = base_dir.relative_to(cwd).parts
+    except ValueError:
+        return None
+    if not base_parts:
+        return None
+
+    raw_parts = raw_path.parts
+    if raw_parts[: len(base_parts)] != base_parts:
+        return None
+
+    while raw_parts[: len(base_parts)] == base_parts:
+        raw_parts = raw_parts[len(base_parts) :]
+
+    if not raw_parts:
+        return base_dir
+    return base_dir.joinpath(*raw_parts)
+
+
 def _coerce_int(value: Any, field_name: str) -> int | None:
     value = _normalize_config_value(value)
     if value is None:
@@ -533,7 +609,7 @@ class Settings:
     def from_file(path: str | Path) -> "Settings":
         """Load settings from a file, writing defaults first when it is missing."""
 
-        target = Path(path)
+        target = _absolute_config_path(path)
         if target.exists():
             return _settings_from_config_file(target)
 
@@ -582,10 +658,11 @@ class Settings:
     def save_settings(self, path: str | Path = "voice_conductor.config.jsonc") -> Path:
         """Write settings to JSON and return the destination path."""
 
-        target = Path(path)
+        target = _absolute_config_path(path)
         if target.parent != Path("."):
             target.parent.mkdir(parents=True, exist_ok=True)
         payload = settings_to_dict(self)
+        _make_cache_paths_config_relative(payload, target.parent)
         _preserve_existing_provider_fields(payload, target)
         _resolve_provider_default_voices(payload, self, target)
         target.write_text(_dumps_settings_config(payload, self, target), encoding="utf-8")
@@ -850,7 +927,7 @@ def load_settings() -> Settings:
 
 
 def _settings_from_config_file(path: str | Path) -> Settings:
-    target = Path(path)
+    target = _absolute_config_path(path)
     return _resolve_relative_cache_paths(
         settings_from_dict(_load_settings_file_payload(target)),
         target.parent,
@@ -858,12 +935,24 @@ def _settings_from_config_file(path: str | Path) -> Settings:
 
 
 def _resolve_relative_cache_paths(settings: Settings, base_dir: Path) -> Settings:
+    base_dir = _absolute_config_path(base_dir)
     cache = settings.voice_conductor.cache
     for field_name in ("root", "path", "api_dir"):
         value = getattr(cache, field_name)
         if value is not None and not Path(value).is_absolute():
-            setattr(cache, field_name, _normalize_windows_config_path(base_dir / value))
+            setattr(cache, field_name, _resolve_config_cache_path(value, base_dir))
     return settings
+
+
+def _make_cache_paths_config_relative(payload: dict[str, Any], base_dir: Path) -> None:
+    voice_conductor = payload.get("voice_conductor")
+    if not isinstance(voice_conductor, dict):
+        return
+    cache = voice_conductor.get("cache")
+    if not isinstance(cache, dict):
+        return
+    for field_name in ("root", "path", "api_dir"):
+        cache[field_name] = _config_relative_path(cache.get(field_name), base_dir)
 
 
 def settings_from_dict(payload: dict[str, Any]) -> Settings:
