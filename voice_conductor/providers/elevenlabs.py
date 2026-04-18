@@ -64,19 +64,15 @@ class ElevenLabsProvider(TTSProvider):
             payload["use_speaker_boost"] = self._provider_settings.speaker_boost
         return payload
 
-    def cache_key_suffix(self) -> str:
+    def cache_settings(self) -> dict[str, Any]:
         """Encode synthesis options that affect phrase-cache audio output."""
 
-        return json.dumps(
-            {
-                "model_id": self._provider_settings.model_id,
-                "output_format": self._output_format(),
-                "language_code": self._provider_settings.language_code,
-                "voice_settings": self._voice_settings_payload(),
-            },
-            sort_keys=True,
-            separators=(",", ":"),
-        )
+        return {
+            "model_id": self._provider_settings.model_id,
+            "output_format": self._output_format(),
+            "language_code": self._provider_settings.language_code,
+            "voice_settings": self._voice_settings_payload(),
+        }
 
     def cache_voice_key(self, voice: str | None) -> str:
         """Use ElevenLabs' stable voice id, never the display name, for caching."""

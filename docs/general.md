@@ -123,13 +123,13 @@ class TTSProvider:
 
     def is_available(self) -> bool: ...
     def default_voice(self) -> str | None: ...
-    def cache_key_suffix(self) -> str: ...
+    def cache_settings(self) -> str | dict[str, Any] | None: ...
     def cache_voice_key(self, voice: str | None) -> str: ...
     def synthesize(self, text: str, *, voice: str | None = None) -> SynthesizedAudio: ...
     def list_voices(self, settings: Settings | None = None) -> list[VoiceInfo]: ...
 ```
 
-`cache_key_suffix()` should include provider options that change the generated audio, such as model, speed, language, endpoint, or output format. `cache_voice_key()` normalizes voice identifiers so the phrase cache can reuse entries even when users pass equivalent voice names.
+`cache_settings()` should include provider options that change the generated audio, such as model, speed, language, endpoint, or output format. Returning a dict is recommended because Voice Conductor serializes it deterministically before hashing. `cache_voice_key()` normalizes voice identifiers so the phrase cache can reuse entries even when users pass equivalent voice names.
 
 ## Custom Providers
 
@@ -173,8 +173,8 @@ class LocalProvider(TTSProvider):
     def default_voice(self) -> str | None:
         return "default"
 
-    def cache_key_suffix(self) -> str:
-        return f"endpoint={self.endpoint};speed={self.speed}"
+    def cache_settings(self) -> dict[str, str | float]:
+        return {"endpoint": self.endpoint, "speed": self.speed}
 
     def synthesize(self, text: str, *, voice: str | None = None) -> SynthesizedAudio:
         return SynthesizedAudio(

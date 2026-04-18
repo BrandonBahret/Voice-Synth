@@ -190,13 +190,13 @@ class WindowsSpeechProvider(TTSProvider):
             return f"$synth.SelectVoice('{escaped_voice}')"
         return ""
 
-    def cache_key_suffix(self) -> str:
+    def cache_settings(self) -> dict[str, int | str]:
         """Encode Windows speech options that affect rendered audio."""
 
-        parts = [f"rate={self._rate()}", f"volume={self._volume()}"]
+        settings: dict[str, int | str] = {"rate": self._rate(), "volume": self._volume()}
         if self._provider_settings.default_voice:
-            parts.append(f"default_voice={self._provider_settings.default_voice.strip().lower()}")
-        return ",".join(parts)
+            settings["default_voice"] = self._provider_settings.default_voice.strip().lower()
+        return settings
 
     def synthesize(self, text: str, *, voice: str | None = None) -> SynthesizedAudio:
         """Render speech to a temporary WAV file and return normalized audio."""

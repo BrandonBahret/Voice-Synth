@@ -79,14 +79,14 @@ class ToneProvider(TTSProvider):
     def default_voice(self) -> str | None:
         return self._normalize_voice(self.config.default_voice)
 
-    def cache_key_suffix(self) -> str:
+    def cache_settings(self) -> dict[str, float | int]:
         # Cache keys should include settings that change generated audio. If the
         # base frequency changes, cached clips should not be reused.
-        return (
-            f"base_frequency={self.config.base_frequency};"
-            f"sample_rate={self.config.sample_rate};"
-            f"seconds_per_character={self.config.seconds_per_character}"
-        )
+        return {
+            "base_frequency": self.config.base_frequency,
+            "sample_rate": self.config.sample_rate,
+            "seconds_per_character": self.config.seconds_per_character,
+        }
 
     def list_voices(self) -> list[VoiceInfo]:
         # VoiceInfo powers list_voices() in host applications and configuration

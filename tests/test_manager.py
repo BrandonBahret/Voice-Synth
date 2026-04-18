@@ -39,7 +39,7 @@ class FakeProvider(TTSProvider):
     def default_voice(self) -> str | None:
         return self._default_voice
 
-    def cache_key_suffix(self) -> str:
+    def cache_settings(self) -> str:
         return ""
 
     def synthesize(self, text: str, *, voice: str | None = None) -> SynthesizedAudio:
@@ -81,20 +81,20 @@ class FakeCanonicalVoiceProvider(FakeProvider):
         )
 
 
-class FakeProviderWithSuffix(FakeProvider):
+class FakeProviderWithSettings(FakeProvider):
     def __init__(
         self,
         name: str,
         *,
         available: bool,
-        cache_suffix: str,
+        cache_settings: str,
         default_voice: str | None = None,
     ) -> None:
         super().__init__(name, available=available, default_voice=default_voice)
-        self._cache_suffix = cache_suffix
+        self._cache_settings = cache_settings
 
-    def cache_key_suffix(self) -> str:
-        return self._cache_suffix
+    def cache_settings(self) -> str:
+        return self._cache_settings
 
 
 @dataclass(slots=True)
@@ -118,8 +118,8 @@ class TypedConfigProvider(TTSProvider):
     def default_voice(self) -> str | None:
         return None
 
-    def cache_key_suffix(self) -> str:
-        return f"endpoint={self.endpoint};speed={self.speed}"
+    def cache_settings(self) -> dict[str, str | float]:
+        return {"endpoint": self.endpoint, "speed": self.speed}
 
     def synthesize(self, text: str, *, voice: str | None = None) -> SynthesizedAudio:
         return SynthesizedAudio(
@@ -463,8 +463,8 @@ class TTSManagerTests(unittest.TestCase):
         self.assertIsNone(settings.voice_conductor.default_provider)
 
     def test_cache_key_changes_when_provider_settings_change(self) -> None:
-        provider_fast = FakeProviderWithSuffix("kokoro", available=True, cache_suffix="speed=1.0")
-        provider_slow = FakeProviderWithSuffix("kokoro", available=True, cache_suffix="speed=1.5")
+        provider_fast = FakeProviderWithSettings("kokoro", available=True, cache_settings="speed=1.0")
+        provider_slow = FakeProviderWithSettings("kokoro", available=True, cache_settings="speed=1.5")
         with tempfile.TemporaryDirectory() as temp_dir:
             cache_path = str(Path(temp_dir) / "voice_conductor_cache.db")
             first = TTSManager(
@@ -495,8 +495,8 @@ class TTSManagerTests(unittest.TestCase):
         self.assertEqual(provider_slow.calls, [("Need backup", None)])
 
     def test_relaxed_cache_lookup_can_reuse_different_provider_settings(self) -> None:
-        provider_fast = FakeProviderWithSuffix("kokoro", available=True, cache_suffix="speed=1.0")
-        provider_slow = FakeProviderWithSuffix("kokoro", available=True, cache_suffix="speed=1.5")
+        provider_fast = FakeProviderWithSettings("kokoro", available=True, cache_settings="speed=1.0")
+        provider_slow = FakeProviderWithSettings("kokoro", available=True, cache_settings="speed=1.5")
         with tempfile.TemporaryDirectory() as temp_dir:
             cache_path = str(Path(temp_dir) / "voice_conductor_cache.db")
             first = TTSManager(

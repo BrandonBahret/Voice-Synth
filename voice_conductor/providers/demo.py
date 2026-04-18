@@ -65,9 +65,13 @@ class DemoProvider(TTSProvider):
         except (TypeError, ValueError):
             return 1.0
 
-    def cache_key_suffix(self) -> str:
+    def cache_settings(self) -> dict[str, str | float]:
         speed = self._speed()
-        return f"retro-blip-v2;speed={speed:.3f};voice={self.default_voice() or _DEFAULT_VOICE}"
+        return {
+            "engine": "retro-blip-v2",
+            "speed": round(speed, 3),
+            "voice": self.default_voice() or _DEFAULT_VOICE,
+        }
 
     def list_voices(self) -> list[VoiceInfo]:
         return [
@@ -326,7 +330,7 @@ class DemoProvider(TTSProvider):
                 "style": "retro talking blips",
                 "voice_profile": profile["name"],
                 "normalized_voice_key": self.cache_voice_key(selected_voice),
-                "cache_suffix": self.cache_key_suffix(),
+                "cache_settings": self.cache_settings(),
                 "word_timing": word_timing,
             },
         )

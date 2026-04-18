@@ -194,12 +194,12 @@ class ToneProvider(TTSProvider):
     def default_voice(self) -> str | None:
         return self._normalize_voice(self.config.default_voice)
 
-    def cache_key_suffix(self) -> str:
-        return (
-            f"bpm={self.config.bpm};"
-            f"master_volume={self.config.master_volume};"
-            f"sample_rate={self.config.sample_rate}"
-        )
+    def cache_settings(self) -> dict[str, float | int]:
+        return {
+            "bpm": self.config.bpm,
+            "master_volume": self.config.master_volume,
+            "sample_rate": self.config.sample_rate,
+        }
 
     def list_voices(self) -> list[VoiceInfo]:
         return [

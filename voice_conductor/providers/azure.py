@@ -77,17 +77,13 @@ class AzureSpeechProvider(TTSProvider):
     def _prosody_rate(self) -> float:
         return min(max(self._provider_settings.speed, 0.5), 2.0)
 
-    def cache_key_suffix(self) -> str:
+    def cache_settings(self) -> dict[str, Any]:
         """Encode Azure synthesis options that alter phrase-cache audio."""
 
-        return json.dumps(
-            {
-                "speed": self._prosody_rate(),
-                "language_code": self._provider_settings.language_code,
-            },
-            sort_keys=True,
-            separators=(",", ":"),
-        )
+        return {
+            "speed": self._prosody_rate(),
+            "language_code": self._provider_settings.language_code,
+        }
 
     def synthesize(self, text: str, *, voice: str | None = None) -> SynthesizedAudio:
         """Synthesize text with Azure SSML and return normalized WAV audio."""

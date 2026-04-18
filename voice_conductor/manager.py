@@ -396,7 +396,7 @@ class TTSManager:
     def _cache_settings_json(self, provider: TTSProvider) -> str:
         """Return deterministic provider option state for phrase-cache settings."""
 
-        return canonical_settings_json(provider.cache_key_suffix())
+        return canonical_settings_json(provider.cache_settings())
 
     def _audio_voice_key(
         self,

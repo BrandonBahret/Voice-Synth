@@ -107,7 +107,7 @@ class WindowsSpeechProviderTests(unittest.TestCase):
         self.assertEqual(voices[0].name, "Microsoft Zira Desktop")
         mock_run.assert_called_once()
 
-    def test_cache_key_suffix_tracks_windows_specific_settings(self) -> None:
+    def test_cache_settings_tracks_windows_specific_settings(self) -> None:
         provider = RecordingWindowsSpeechProvider(
             _settings(
                 windows={
@@ -118,11 +118,12 @@ class WindowsSpeechProviderTests(unittest.TestCase):
             )
         )
 
-        suffix = provider.cache_key_suffix()
+        cache_settings = provider.cache_settings()
 
-        self.assertIn("rate=2", suffix)
-        self.assertIn("volume=65", suffix)
-        self.assertIn("default_voice=zira", suffix)
+        self.assertEqual(
+            cache_settings,
+            {"rate": 2, "volume": 65, "default_voice": "zira"},
+        )
 
     def test_synthesize_uses_default_voice_when_configured(self) -> None:
         provider = RecordingWindowsSpeechProvider(

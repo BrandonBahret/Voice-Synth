@@ -42,8 +42,8 @@ class TTSProvider(ABC):
 
         return None
 
-    def cache_key_suffix(self) -> str:
-        """Return provider option state that should split phrase-cache entries."""
+    def cache_settings(self) -> str | dict[str, Any] | None:
+        """Return synthesis option state that should split phrase-cache entries."""
 
         return ""
 

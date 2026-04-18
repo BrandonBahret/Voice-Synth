@@ -95,10 +95,10 @@ class KokoroProvider(TTSProvider):
             for voice in _DEFAULT_KOKORO_VOICES
         ]
 
-    def cache_key_suffix(self) -> str:
+    def cache_settings(self) -> dict[str, float]:
         """Partition phrase cache entries by Kokoro speed setting."""
 
-        return f"speed={self._provider_settings.speed:.4f}"
+        return {"speed": self._provider_settings.speed}
 
     def synthesize(self, text: str, *, voice: str | None = None) -> SynthesizedAudio:
         """Synthesize text with Kokoro and concatenate streamed audio chunks."""
